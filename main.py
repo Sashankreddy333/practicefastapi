@@ -16,3 +16,11 @@ def sum():
 def view():
     getview=load_data()
     return getview
+@app.get('/view/{id}')
+def viewwithid(id):
+    getview=load_data()
+    if id in getview:
+        return getview[id]
+    else:
+        return {"id not found please enter correct id"}
+        
