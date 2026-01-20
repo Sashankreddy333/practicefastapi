@@ -95,4 +95,11 @@ def getsorted(sortby:str=Query(...,description="what it should be sorted by"),or
     loadeddata=load_data()
     sortedvalues=sorted(loadeddata.values(),key=lambda x:x[sortby],reverse=reversed)
     return sortedvalues
-        
+@app.delete("/delete/{patientid}")
+def delete_data(patientid:str):
+    data=load_data()
+    if patientid not in data:
+        raise HTTPException(status_code=400,detail="id not found")
+    del data[patientid]
+    save_data(data)
+    return JSONResponse(status_code=201,content={"message":"deleted successfully"})
