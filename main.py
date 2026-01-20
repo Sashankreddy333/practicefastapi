@@ -3,7 +3,7 @@ import json
 from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel,computed_field,Field
-from typing import Annotated,Literal
+from typing import Annotated,Literal,Optional
 app=FastAPI()
 class patient(BaseModel):
     id:Annotated[str,Field(..., description="the patient id")]
@@ -26,6 +26,14 @@ class patient(BaseModel):
             return "Normal"
         else:
             return "Obese"
+class update_patient(BaseModel):
+    id:Annotated[Optional[str],Field(default=None,description="the patient id")]
+    name:Annotated[Optional[str],Field(default=None,description="patient name")]
+    city:Annotated[Optional[str],Field(default=None,description="patient living city",max_length=20)]
+    age:Annotated[Optional[int],Field(default=None,gt=0,lt=100,description="patient age")]
+    gender:Annotated[Optional[Literal['male','female','others']],Field(default=None,description="patient gender")]
+    height:Annotated[Optional[float],Field(default=None,gt=0,description="patient height")]
+    weight:Annotated[Optional[float],Field(default=None,gt=0,description="patient weight")]
 
 def load_data():
     with open('patients.json','r') as f:
@@ -42,7 +50,22 @@ def create_patient(patient:patient):
     data[patient.id]=patient.model_dump(exclude=["id"])
     save_data(data)
     return JSONResponse(status_code=201,content={"message":"data added successfully"})
-        
+@app.put('/edit/{patientid}') 
+def update_data(patientid:str,new_data_point:update_patient):
+    data=load_data()
+    if patientid not in data:
+        raise HTTPException(status_code=400,detail="patient id not found")
+    old_data=data[patientid]
+    new_data=new_data_point.model_dump(exclude_unset=True)
+    for key ,val in new_data.items():
+        old_data[key]=val
+    old_data["id"]=patientid
+    old_data_update=patient(**old_data)
+    updated_data_point=old_data_update.model_dump(exclude="id")
+    data[patientid]=updated_data_point
+    save_data(data)
+    return JSONResponse(status_code=201,content={"message":"successfully updated"})
+    
 @app.get('/')
 def get():
     return {"message":"hello world"}
